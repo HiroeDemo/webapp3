@@ -1,19 +1,7 @@
-## Streamlit Image Resizer
-
-このStreamlitアプリは、アップロードした画像のサイズと画質を調整します。
-
-### 使い方
-
-1. アプリを起動します。
-2. 画像をアップロードします。
-3. スライダーで縮小比率と画質を調整します。
-4. 処理された画像が表示されます。
-
-### ソースコード
-
 ```python
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageOps
+import numpy as np
 import io
 
 # 画像アップロード
@@ -29,9 +17,23 @@ if uploaded_image is not None:
     ratio = st.slider("縮小比率 (1/?)", 1, 10, 2)
     quality = st.slider("画質 (1-100)", 1, 100, 85)
 
+    # フィルター選択
+    filter_option = st.selectbox("フィルターを選択", ["None", "Grayscale", "Sepia"])
+
     # 画像処理
     new_size = (image.width // ratio, image.height // ratio)
     image = image.resize(new_size, Image.ANTIALIAS)
+
+    if filter_option == "Grayscale":
+        image = ImageOps.grayscale(image)
+    elif filter_option == "Sepia":
+        np_image = np.array(image)
+        sepia_filter = np.array([[0.393, 0.769, 0.189],
+                                 [0.349, 0.686, 0.168],
+                                 [0.272, 0.534, 0.131]])
+        sepia_image = np_image @ sepia_filter.T
+        sepia_image = np.clip(sepia_image, 0, 255)
+        image = Image.fromarray(sepia_image.astype('uint8'), 'RGB')
 
     # 画質調整と表示
     img_byte_arr = io.BytesIO()
